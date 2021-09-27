@@ -321,7 +321,7 @@ SPISD.begin(SD_SCK, SD_MISO, SD_MOSI);
 /// Se a Porta for aberta, a programação entrará no "if"
 /// Se o arquivosend (send.txt do SD Card) estiver com as 5 ultimas gravações (totalizando 185 caracteres), a programação entrará no "if"
 
-if ( Sensor.getTempCByIndex(0) >= 8 || digitalRead(PIN_PORTA) == HIGH || arquivodeenvio.length() == 185 ) {
+if ( Sensor.getTempCByIndex(0) >= 7 || digitalRead(PIN_PORTA) == HIGH || arquivodeenvio.length() == 185 ) {
 
 /// Caso a porta tenha acionado o "if" principal, com este próximo "if", o programa acionará o Buzzer 
 
