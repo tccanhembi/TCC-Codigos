@@ -11,7 +11,7 @@ import socket
 
 # Estabelecendo variáveis
 
-temperatura_max = 24.0
+temperatura_max = 7.0
 
 temperatura_0 = 0.0
 temperatura_1 = 0.0
