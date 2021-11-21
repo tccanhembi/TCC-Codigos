@@ -11,7 +11,9 @@ import socket
 
 # Estabelecendo variáveis
 
-temperatura_max = 7.0
+temperatura_max = 8.0
+temperatura_min = 2.0
+
 
 temperatura_0 = 0.0
 temperatura_1 = 0.0
@@ -31,7 +33,7 @@ Tempo_Temperatura_2 = 0
 dados_coletados = []
 dados_separados_error = []
 Envios_0 = 0
-Envios_1 = 1
+Envios_1 = 0
 Envios_2 = 0
 
 IDs = []
@@ -39,12 +41,22 @@ IDs.insert(0, "QMpHfZ")
 IDs.insert(1, "0nHwXx")
 IDs.insert(2, "Victor")
 
+Status_Alarme_0 = ""
+Status_Alarme_1 = ""
+Status_Alarme_2 = ""
+
 """Gerado em : https://www.4devs.com.br/gerador_de_senha"""
 
 ID_Atual = "idatual"
-NivelBateriaAtual_0 = "bateriaatual"
-NivelBateriaAtual_1 = "bateriaatual"
-NivelBateriaAtual_2 = "bateriaatual"
+Temp_Atual = "tempatual"
+Porta_Atual = "portaatual"
+
+NivelBateriaAtual_0 = ""
+NivelBateriaAtual_1 = ""
+NivelBateriaAtual_2 = ""
+
+Bat_Email = ""
+Porta_Email = ""
 
 
 # Define o socket. Onde "0.0.0.0" significa "qualquer IP", na porta "8091".
@@ -59,8 +71,8 @@ def email_porta_aberta():
         password = "uvjqubhxwytbbkkt"
         mail_from = "victoranhembirezende@gmail.com"
         mail_to = "victorfrezende@hotmail.com"
-        mail_subject = f'#ID {ID_Atual}Fora de conformidade - Porta Aberta'
-        mail_body = "Atenção, a porta do refrigerador está aberta por mais de 1 minuto"
+        mail_subject = f'#ID {ID_Atual} - Fora de conformidade - Porta Aberta'
+        mail_body = f"Atenção, a porta do refrigerador está aberta por mais de 3 minutos. O sistema está com a Temperatura de {Temp_Atual}°C e o nível de bateria está {Bat_Email}."
         mimemsg = MIMEMultipart()
         mimemsg['From'] = mail_from
         mimemsg['To'] = mail_to
@@ -78,8 +90,8 @@ def email_temperatura():
     password = "uvjqubhxwytbbkkt"
     mail_from = "victoranhembirezende@gmail.com"
     mail_to = "victorfrezende@hotmail.com"
-    mail_subject = f'#ID {ID_Atual}Fora de conformidade - Temperatura'
-    mail_body = "Atenção, a Temperatura ultrapassou o limite estabelecido"
+    mail_subject = f'#ID {ID_Atual} - Fora de conformidade - Temperatura'
+    mail_body = f"Atenção, a Temperatura ultrapassou os limites estabelecidos - O Sistema está com {Temp_Atual}°C, a porta está {Porta_Email} e a bateria está {Bat_Email}."
     mimemsg = MIMEMultipart()
     mimemsg['From'] = mail_from
     mimemsg['To'] = mail_to
@@ -97,8 +109,8 @@ def email_bateria():
     password = "uvjqubhxwytbbkkt"
     mail_from = "victoranhembirezende@gmail.com"
     mail_to = "victorfrezende@hotmail.com"
-    mail_subject = f'A Bateria do seu dispoditivo de ID# {ID_Atual} está muito baixa'
-    mail_body = "Atenção, a bateria do seu dispositivo está baixa"
+    mail_subject = f'A Bateria do seu dispoditivo de ID# {ID_Atual} está muito baixa.'
+    mail_body = f'Atenção, a bateria do seu dispositivo está baixa. A Temperatura atual é {Temp_Atual}°C e a porta está {Porta_Email}.'
     mimemsg = MIMEMultipart()
     mimemsg['From'] = mail_from
     mimemsg['To'] = mail_to
@@ -139,7 +151,7 @@ def coletadados():
                 # Verifica-se o tamanho da String
                 print(f'O Tamanho da String Recebida foi de : {len(content)}')
                 # O dado correto para ser tratado, deve, necessariamente, conter 259 caracteres
-                if len(content) == 259:
+                if len(content) == 253 or 252:
                     # Aqui separamos a String pelo caracter "<" e adicionamos em uma lista chamada dados_separados
                     # Cada dado é colocado em um elemento, exemplo:
                     # <Victor<Teste, é criado uma lista de 2 elementos, sendo: (Victor, Teste)
@@ -159,6 +171,10 @@ def coletadados():
                     dados_coletados = dados_separados
                     global ID_Atual
                     ID_Atual = dados_separados[3]
+                    global Temp_Atual
+                    Temp_Atual = dados_separados[2]
+                    global Porta_Atual
+                    Porta_Atual = dados_separados[1]
 
                     # Por motivos de segurança,o código irá verificar se o ID enviado via comando Post é um ID permitido
 
@@ -198,16 +214,22 @@ def atualiza_dados():
         NivelBateriaAtual_0 = float(dados_coletados[4])
 
         # Estabelece os parâmetros de bateria Alta, Média e Baixa
+        global Bat_Email
+        global Porta_Email
 
         if NivelBateriaAtual_0 >= 4.00:
             bateria = str("Alta")
+            Bat_Email = "Alta"
         if 3.8 < NivelBateriaAtual_0 < 4.0:
             bateria = str("Média")
+            Bat_Email = "Média"
         if NivelBateriaAtual_0 <= 3.8:
             bateria = str("Baixa")
+            Bat_Email = "Baixa"
 
         if (dados_coletados[1]) == "aberta":
             porta = "Aberta"
+            Porta_Email = "Aberta"
             global Tempo_Porta_0
             # Faz o incremento na variável "Tempo_Porta" a cada vez que recebe a informação de porta aberta.
             Tempo_Porta_0 = Tempo_Porta_0 + 1
@@ -216,19 +238,22 @@ def atualiza_dados():
             # Zera o valor de "Tempo_Porta" caso a porta tenha sido fechada.
 
             porta = "Fechada"
+            Porta_Email = "Fechada"
             Tempo_Porta_0 = 0
 
-        if Tempo_Porta_0 >= 10:
+        if Tempo_Porta_0 >= 2:
             # Caso seja recebido o valor de Porta Aberta durante 10 verificações,envia-se um e-mail ao responsável
 
             email_porta_aberta()
+            global Status_Alarme_0
+            Status_Alarme_0 = "Porta"
             print(f'Atingimos o tempo máximo de Porta Aberta: {Tempo_Porta_0}s .')
             print('Um e-mail de alerta de Porta Aberta foi enviado.')
             # Após o envio de e-mail, é zerado o valor de Tempo Porta para que a contagem recomece.
 
             Tempo_Porta_0 = 0
 
-        if temperatura_0 >= temperatura_max:
+        if temperatura_0 >= temperatura_max or temperatura_0 <= temperatura_min:
             global Tempo_Temperatura_0
             # Faz o incremento na variável "Tempo_Temperatura" cada vez que recebe a informação de Temperatura excedida
             Tempo_Temperatura_0 = Tempo_Temperatura_0 + 1
@@ -236,9 +261,11 @@ def atualiza_dados():
         else:
             Tempo_Temperatura_0 = 0
 
+
         if Tempo_Temperatura_0 >= 10:
             # Caso seja recebido o valor de Temp excedida durante 10 verificações,envia-se um e-mail ao responsável
             email_temperatura()
+            Status_Alarme_0 = "Temperatura"
             print(f'Atingimos o tempo máximo de Temperatura excedida: {Tempo_Temperatura_0}s .')
             print('Um e-mail de alerta de Temperatura foi enviado.')
             Tempo_Temperatura_0 = 0
@@ -246,6 +273,7 @@ def atualiza_dados():
         # Uma vez que for identificada a bateria Baixa, envia-se um e-mail ao responsável
         if bateria == "Baixa":
             email_bateria()
+            Status_Alarme_0 = "Bateria"
             print("Como a bateria está baixa, enviamos um e-mail para o responsável")
 
 
@@ -280,11 +308,12 @@ def atualiza_dados():
 
             dataehoraarduino = dados_coletados[5]
             print(f'Dados enviados de dataehora: {dados_coletados[5]}')
+            global Status_Alarme_0
 
             cursor = conn.cursor()
             cursor.execute(
                 'insert into dbo.TCC_Pratica(Time_Stamp,Status_Porta,Sensor_Temp,Id_Sensor,Battery_level,Alarme) values(?,?,?,?,?,?);',
-                (dataehoraarduino, porta, dados_coletados[2], ID_Atual, bateria, "TesteAlarme")
+                (dataehoraarduino, porta, dados_coletados[2], ID_Atual, bateria, Status_Alarme_0)
             )
             print("Dados Exportados para o SQL com Sucesso")
             print('')
@@ -299,6 +328,7 @@ def atualiza_dados():
         create(conn)
         conn.close()
         print("FOI UTILIZADO O ID #0")
+        Status_Alarme_0 = ""
 
     # A mesma parte do código se repetirá para os IDs 1 e 2.
     """ID #1"""
@@ -311,41 +341,50 @@ def atualiza_dados():
         NivelBateriaAtual_1 = float(dados_coletados[4])
         if NivelBateriaAtual_1 >= 4.00:
             bateria = str("Alta")
+            Bat_Email = "Alta"
         if 3.8 < NivelBateriaAtual_1 < 4.0:
             bateria = str("Média")
+            Bat_Email = "Média"
         if NivelBateriaAtual_1 <= 3.8:
             bateria = str("Baixa")
+            Bat_Email = "Baixa"
 
-        if (dados_coletados[1]) == "aberta":
+        if (dados_coletados[1]) == "1":
             porta = "Aberta"
+            Porta_Email = "Aberta"
             global Tempo_Porta_1
             Tempo_Porta_1 = Tempo_Porta_1 + 1
 
         else:
             porta = "Fechada"
+            Porta_Email = "Fechada"
             Tempo_Porta_1 = 0
 
-        if Tempo_Porta_1 >= 10:
+        if Tempo_Porta_1 >= 2:
             email_porta_aberta()
+            global Status_Alarme_1
+            Status_Alarme_1 = "Porta"
             print(f'Atingimos o tempo máximo de Porta Aberta: {Tempo_Porta_1}s .')
             print('Um e-mail de alerta de Porta Aberta foi enviado.')
             Tempo_Porta_1 = 0
 
-        if temperatura_1 >= temperatura_max:
+        if temperatura_1 >= temperatura_max or temperatura_1 <= temperatura_min:
             global Tempo_Temperatura_1
             Tempo_Temperatura_1 = Tempo_Temperatura_1 + 1
 
         else:
             Tempo_Temperatura_1 = 0
 
-        if Tempo_Temperatura_1 >= 10:
+        if Tempo_Temperatura_1 >= 1:
             email_temperatura()
+            Status_Alarme_1 = "Temperatura"
             print(f'Atingimos o tempo máximo de Temperatura excedida: {Tempo_Temperatura_1}s .')
             print('Um e-mail de alerta de Temperatura foi enviado.')
             Tempo_Temperatura_1 = 0
 
         if bateria == "Baixa":
             email_bateria()
+            Status_Alarme_1 = "Bateria"
             print("Como a bateria está baixa, enviamos um e-mail para o responsável")
 
             """ SQL SERVER """
@@ -371,14 +410,14 @@ def atualiza_dados():
         )
 
         def create(conn):
-
+            global Status_Alarme_1
             dataehoraarduino = dados_coletados[5]
             print(f'Dados enviados de dataehora: {dados_coletados[5]}')
 
             cursor = conn.cursor()
             cursor.execute(
                 'insert into dbo.TCC_Pratica(Time_Stamp,Status_Porta,Sensor_Temp,Id_Sensor,Battery_level,Alarme) values(?,?,?,?,?,?);',
-                (dataehoraarduino, porta, dados_coletados[2], ID_Atual, bateria, "TesteAlarme")
+                (dataehoraarduino, porta, dados_coletados[2], ID_Atual, bateria, Status_Alarme_1)
             )
             print("Dados Exportados para o SQL com Sucesso")
             print('')
@@ -386,6 +425,7 @@ def atualiza_dados():
             print(dataehoraarduino)
             print(f'Nível da Bateria = {bateria}')
             print('')
+
             conn.commit()
             read(conn)
 
@@ -393,6 +433,7 @@ def atualiza_dados():
         create(conn)
         conn.close()
         print("FOI UTILIZADO O ID #1")
+        Status_Alarme_1 = ""
 
     """ID #2"""
     if dados_coletados[3] == IDs[2]:
@@ -402,41 +443,49 @@ def atualiza_dados():
         NivelBateriaAtual_2 = float(dados_coletados[4])
         if NivelBateriaAtual_2 >= 4.00:
             bateria = str("Alta")
+            Bat_Email = "Alta"
         if 3.8 < NivelBateriaAtual_2 < 4.0:
             bateria = str("Média")
+            Bat_Email = "Média"
         if NivelBateriaAtual_2 <= 3.8:
             bateria = str("Baixa")
+            Bat_Email = "Baixa"
 
-        if (dados_coletados[1]) == "aberta":
+        if (dados_coletados[1]) == "1":
             porta = "Aberta"
+            Porta_Email = "Aberta"
             global Tempo_Porta_2
             Tempo_Porta_2 = Tempo_Porta_2 + 1
 
         else:
             porta = "Fechada"
+            Porta_Email = "Fechada"
             Tempo_Porta_2 = 0
 
-        if Tempo_Porta_2 >= 10:
+        if Tempo_Porta_2 >= 2:
             email_porta_aberta()
+            Status_Alarme_2 = "Porta"
             print(f'Atingimos o tempo máximo de Porta Aberta: {Tempo_Porta_2}s .')
             print('Um e-mail de alerta de Porta Aberta foi enviado.')
             Tempo_Porta_2 = 0
 
-        if temperatura_2 >= temperatura_max:
+        if temperatura_2 >= temperatura_max or temperatura_2 <= temperatura_min:
             global Tempo_Temperatura_2
             Tempo_Temperatura_2 = Tempo_Temperatura_2 + 1
 
         else:
             Tempo_Temperatura_2 = 0
 
-        if Tempo_Temperatura_2 >= 10:
+        if Tempo_Temperatura_2 >= 1:
             email_temperatura()
+            Status_Alarme_2 = "Temperatura"
             print(f'Atingimos o tempo máximo de Temperatura excedida: {Tempo_Temperatura_2}s .')
             print('Um e-mail de alerta de Temperatura foi enviado.')
             Tempo_Temperatura_2 = 0
 
         if bateria == "Baixa":
             email_bateria()
+            Status_Alarme_2 = "Bateria"
             print("Como a bateria está baixa, enviamos um e-mail para o responsável")
 
             """ SQL SERVER """
@@ -464,11 +513,12 @@ def atualiza_dados():
 
             dataehoraarduino = dados_coletados[5]
             print(f'Dados enviados de dataehora: {dados_coletados[5]}')
+            global Status_Alarme_2
 
             cursor = conn.cursor()
             cursor.execute(
                 'insert into dbo.TCC_Pratica(Time_Stamp,Status_Porta,Sensor_Temp,Id_Sensor,Battery_level,Alarme) values(?,?,?,?,?,?);',
-                (dataehoraarduino, porta, dados_coletados[2], ID_Atual, bateria, "TesteAlarme")
+                (dataehoraarduino, porta, dados_coletados[2], ID_Atual, bateria, Status_Alarme_2)
             )
             print("Dados Exportados para o SQL com Sucesso")
             print('')
@@ -478,10 +528,12 @@ def atualiza_dados():
             print('')
             conn.commit()
             read(conn)
+
         read(conn)
         create(conn)
         conn.close()
         print("FOI UTILIZADO O ID #2")
+        Status_Alarme_2 = ""
 
 # Loop da função "coletadados()"
 
