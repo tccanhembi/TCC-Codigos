@@ -1,8 +1,9 @@
-/////Declaração das Bibliotecas e Variáveis///////
+
+  /////Declaração das Bibliotecas e Variáveis///////
 
 #define SIM800L_RX     27
 #define SIM800L_TX     26
-#define SIM800L_PWRKEY 4
+
 #define SIM800L_RST    5
 #define SIM800L_POWER  23
 #include <OneWire.h>
@@ -74,7 +75,7 @@ pinMode(PIN_BUZZER,OUTPUT);
  
   if (! rtc.begin()) {
     Serial.println("Couldn't find RTC");
-    while (1);
+    
   }
  
   if (rtc.lostPower()) {
@@ -107,6 +108,14 @@ Serial.println ("");
 Serial.print ("Temperatura:");
 Serial.println (Sensor.getTempCByIndex(0));
 Serial.println ("");
+String tempatingida;
+if (Sensor.getTempCByIndex(0) >= 8 || Sensor.getTempCByIndex(0) <= 2 ){
+  tempatingida = "Verdade";
+}
+else {
+  tempatingida = "Falso";
+}
+Serial.println (tempatingida);
 
 //// Incrementa ao valor boot_count +1 ////
 ++boot_count;
@@ -208,6 +217,10 @@ valortemperatura = temperaturainteiro;
 if (valortemperatura == "-127") { ///"if" para evitar o erro dando o valor de "99".
   valortemperatura = "99";
 }
+
+if (valortemperatura.length() < 2) { ///"if" para garantir sempre 2 digitos no minuto
+      valortemperatura = "0"+valortemperatura;
+    }
 
 
 //Porta
@@ -321,25 +334,43 @@ SPISD.begin(SD_SCK, SD_MISO, SD_MOSI);
 /// Se a Porta for aberta, a programação entrará no "if"
 /// Se o arquivosend (send.txt do SD Card) estiver com as 5 ultimas gravações (totalizando 185 caracteres), a programação entrará no "if"
 
-if ( Sensor.getTempCByIndex(0) >= 7 || digitalRead(PIN_PORTA) == HIGH || arquivodeenvio.length() == 185 ) {
+if ( tempatingida == "Verdade" || digitalRead(PIN_PORTA) == HIGH || arquivodeenvio.length() == 185 ) {
 
 /// Caso a porta tenha acionado o "if" principal, com este próximo "if", o programa acionará o Buzzer 
 
   if (digitalRead(PIN_PORTA) == HIGH){
     digitalWrite (PIN_BUZZER, HIGH);
     Serial.println("LIGANDO O BUZZER");
+    delay(2000);
+    digitalWrite( PIN_BUZZER, LOW);
   }
 
 /// Caso a temperatura tenha acionado o "if" principal, com este próximo "if", o programa acionará o Buzzer com dois bips iniciais
 /// Diferenciando, de forma sonora, o tipo de "ritmo" do Buzzer
 
-  if (digitalRead(Sensor.getTempCByIndex(0)) >= 26){
+Sensor.begin();
+  Sensor.requestTemperatures();
+
+String tempatingida;
+if (Sensor.getTempCByIndex(0) >= 8 || Sensor.getTempCByIndex(0) <= 2 ){
+  tempatingida = "Verdade";
+}
+else {
+  tempatingida = "Falso";
+}
+
+Serial.println("........");
+Serial.println(tempatingida);
+
+  if (tempatingida == "Verdade"){
     digitalWrite (PIN_BUZZER, HIGH);
-    delay(500);
+    delay(1000);
     Serial.println("LIGANDO O BUZZER");
     digitalWrite (PIN_BUZZER, LOW);
     delay(500);
     digitalWrite (PIN_BUZZER, HIGH);
+    delay(1000);
+    digitalWrite (PIN_BUZZER, LOW);
   }
 
   Serial.println("Iniciando o código completo...");
@@ -453,10 +484,12 @@ if (mes.length() < 2) {
   /// Transforma o nível lógico da porta em String
   
   if (digitalRead(PIN_PORTA) == HIGH){
-    statusporta = "aberta";
+    statusporta = "1";
+    //Aberta
   }
   if (digitalRead(PIN_PORTA) == LOW){
-    statusporta = "fechada";
+    statusporta = "0";
+    //Fechada
   }
 
 /// mede a tensão da pilha e coloca esse valor na variável "volts"
@@ -503,7 +536,7 @@ arquivosend = SD.open("/send.txt", "r"); //read from file
 
   /// Caso o arquivo send.txt tenha 5 gravações, o próximo "if" será acionado, dando início ao primeiro envio.
   /// Próximo if referente ao Envio 1 (com os 5 Registros)
-  if (sendpost.length() == 185){
+  if (sendpost.length() == 185|| digitalRead(PIN_PORTA) == HIGH){
   gsm_send_serial("AT+CLTS=1");
   gsm_send_serial("AT+CCLK?");
   gsm_send_serial("AT+SAPBR=1,1");
